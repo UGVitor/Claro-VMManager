@@ -16,19 +16,23 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
     private String id;
 
     @NotNull(message = "The name can't be Null")
     @NotBlank(message = "The name can't be Blank")
+    @Column(nullable = false)
     private String name;
 
     @NotNull(message = "The email can't be Null")
     @NotBlank(message = "The email can't be Blank")
+    @Column(nullable = false)
     @Email
     private String email;
 
     @NotNull(message = "The password can't be Null")
     @NotBlank(message = "The password can't be Blank")
+    @Column(nullable = false)
     private String password;
 
     public String getName() {

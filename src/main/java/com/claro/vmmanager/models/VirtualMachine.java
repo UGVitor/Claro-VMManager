@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,7 @@ public class VirtualMachine {
     private Long id;
 
     @NotBlank(message = "Name is required")
+    @Size(min = 5, message = "Name must have at least 5 characters")
     @Column(nullable = false)
     private String name;
 
@@ -60,7 +62,7 @@ public class VirtualMachine {
     @PrePersist
     public void prePersist() {
         this.dataCriacao = LocalDateTime.now();
-        this.status = Status.CREATED;
+        this.status = Status.RUNNING;
     }
     public long getId() {
         return id;

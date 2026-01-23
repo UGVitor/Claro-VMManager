@@ -42,8 +42,8 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.POST, "/auth/v1/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/v1/register").permitAll()
-
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.GET, "/vm/v1").permitAll()
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -13,6 +13,7 @@ API REST para gerenciamento de máquinas virtuais, construída com **Spring Boot
 - [Como Executar](#como-executar)
 - [Endpoints](#endpoints)
 - [Autenticação](#autenticação)
+- [Sistema de Auditoria](#sistema-de-auditoria)
 - [Documentação API](#documentação-api)
 
 ---
@@ -24,7 +25,6 @@ API REST para gerenciamento de máquinas virtuais, construída com **Spring Boot
 - **Spring Data JPA**
 - **Spring Security**
 - **PostgreSQL**
-- **JWT (Auth0)**
 - **Swagger / OpenAPI (springdoc-openapi)**
 - **Maven**
 - **Lombok**
@@ -49,6 +49,20 @@ API REST para gerenciamento de máquinas virtuais, construída com **Spring Boot
 - ✅ Atualização parcial de recursos
 - ✅ Data de criação automática
 
+### Sistema de Auditoria
+- ✅ **Registro automático** de todas as ações executadas nas VMs
+- ✅ Rastreamento de operações:
+    - Criação de VMs (`CREATE VM`)
+    - Atualização de VMs (`UPDATE VM`)
+    - Atualização de status (`UPDATE STATUS VM`)
+    - Exclusão de VMs (`DELETE VM`)
+- ✅ Histórico completo com:
+    - Usuário que executou a ação
+    - Nome da VM afetada
+    - Tipo de ação realizada
+    - Data e hora da execução
+- ✅ Consulta de histórico de auditoria via API
+
 ---
 
 ## 📁 Estrutura do Projeto
@@ -59,17 +73,21 @@ src/
      ├─ java/com/claro/vmmanager/
      │   ├─ controllers/          # Endpoints REST
      │   │   ├─ AuthController.java
-     │   │   └─ VirtualMachineController.java
+     │   │   ├─ VirtualMachineController.java
+     │   │   └─ VmTaskExecutionController.java
      │   ├─ services/             # Lógica de negócio
-     │   │   └─ VirtualMachineService.java
+     │   │   ├─ VirtualMachineService.java
+     │   │   └─ VmTaskExecutionService.java
      │   ├─ models/               # Entidades JPA
      │   │   ├─ User.java
      │   │   ├─ VirtualMachine.java
+     │   │   ├─ VmTaskExecution.java
      │   │   └─ enums/
      │   │       └─ Status.java
      │   ├─ repositories/         # Repositórios JPA
      │   │   ├─ UserRepository.java
-     │   │   └─ VirtualMachineRepository.java
+     │   │   ├─ VirtualMachineRepository.java
+     │   │   └─ VmTaskExecutionRepository.java
      │   ├─ dto/                  # Data Transfer Objects
      │   │   ├─ LoginRequestDTO.java
      │   │   ├─ RegisterRequestDTO.java
@@ -77,7 +95,8 @@ src/
      │   │   ├─ VirtualMachineRequestDTO.java
      │   │   ├─ VirtualMachineResponseDTO.java
      │   │   ├─ VirtualMachineUpdateDTO.java
-     │   │   └─ VirtualMachineUpdateStatusDTO.java
+     │   │   ├─ VirtualMachineUpdateStatusDTO.java
+     │   │   └─ VmTaskExecutionResponseDTO.java
      │   └─ infra/                # Configurações de infraestrutura
      │       ├─ security/         # Configurações de segurança
      │       │   ├─ SecurityConfig.java
@@ -197,6 +216,12 @@ api.security.token.secret=chavesupersecreta
 | `PATCH` | `/vm/v1/status/{id}` | Atualiza status da VM | Não requerida* |
 | `DELETE` | `/vm/v1/{id}` | Remove uma VM | Não requerida* |
 
+### Auditoria
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| `GET` | `/tasks/v1` | Lista todas as execuções de tarefas (histórico de auditoria) | Não requerida* |
+
 *Atualmente configurado como público. Recomenda-se adicionar autenticação em produção.
 
 ---
@@ -255,6 +280,44 @@ Authorization: Bearer <seu_token_jwt>
 
 ---
 
+## 📊 Sistema de Auditoria
+
+O sistema de auditoria **VmTaskExecution** registra automaticamente todas as operações realizadas nas máquinas virtuais, fornecendo um histórico completo de ações para rastreabilidade e compliance.
+
+### Como Funciona
+
+O sistema registra automaticamente as seguintes ações:
+
+1. **Criação de VM** - Quando uma nova máquina virtual é criada
+2. **Atualização de VM** - Quando os recursos (CPU, RAM, memória, disco) ou nome são alterados
+3. **Atualização de Status** - Quando o status da VM é modificado (RUNNING, STOPPED, SUSPENDED)
+4. **Exclusão de VM** - Quando uma máquina virtual é removida
+
+### Informações Registradas
+
+Cada registro de auditoria contém:
+- **Username**: Identificação do usuário que executou a ação (atualmente fixo como "admin")
+- **VM Name**: Nome da máquina virtual afetada
+- **Action**: Tipo de ação executada
+- **Executed At**: Data e hora exata da execução (gerado automaticamente)
+
+### Consulta do Histórico
+
+O histórico completo pode ser consultado através do endpoint `/tasks/v1`, que retorna todas as execuções de tarefas registradas no sistema.
+
+**Exemplo de uso:**
+```bash
+GET http://localhost:8080/tasks/v1
+```
+
+**Benefícios:**
+- ✅ Rastreabilidade completa de operações
+- ✅ Auditoria para compliance e segurança
+- ✅ Histórico para troubleshooting
+- ✅ Registro automático sem intervenção manual
+
+---
+
 ## 📚 Documentação API
 
 A documentação completa da API está disponível via **Swagger UI** após iniciar a aplicação:
@@ -310,6 +373,36 @@ Content-Type: application/json
 }
 ```
 
+### Consultar Histórico de Auditoria
+
+```json
+GET /tasks/v1
+```
+
+**Response:**
+```json
+[
+  {
+    "username": "admin",
+    "vmName": "VM-Producao-01",
+    "action": "CREATE VM",
+    "executedAt": "2026-01-23T10:30:00"
+  },
+  {
+    "username": "admin",
+    "vmName": "VM-Producao-01",
+    "action": "UPDATE STATUS VM to STOPPED",
+    "executedAt": "2026-01-23T11:15:00"
+  },
+  {
+    "username": "admin",
+    "vmName": "VM-Producao-01",
+    "action": "UPDATE VM",
+    "executedAt": "2026-01-23T12:00:00"
+  }
+]
+```
+
 ---
 
 ## 🗄️ Modelo de Dados
@@ -342,6 +435,22 @@ Content-Type: application/json
 - `STOPPED` - Máquina parada
 - `SUSPENDED` - Máquina suspensa
 
+### VmTaskExecution (Auditoria)
+
+| Campo | Tipo | Descrição | Validações |
+|-------|------|-----------|------------|
+| `id` | Long | ID único (gerado automaticamente) | - |
+| `username` | String | Nome do usuário que executou a ação | - |
+| `vmName` | String | Nome da VM afetada | - |
+| `action` | String | Tipo de ação executada | CREATE VM, UPDATE VM, UPDATE STATUS VM, DELETE VM |
+| `executedAt` | LocalDateTime | Data e hora da execução | Gerado automaticamente |
+
+**Ações registradas automaticamente:**
+- `CREATE VM` - Quando uma nova VM é criada
+- `UPDATE VM` - Quando os dados de uma VM são atualizados
+- `UPDATE STATUS VM to {STATUS}` - Quando o status de uma VM é alterado
+- `DELETE VM` - Quando uma VM é excluída
+
 ---
 
 ## 🔒 Segurança
@@ -354,10 +463,11 @@ Content-Type: application/json
 
 **⚠️ Recomendações para Produção:**
 - Alterar a chave secreta JWT (`api.security.token.secret`)
-- Habilitar autenticação obrigatória para endpoints de VM
+- Habilitar autenticação obrigatória para endpoints de VM e auditoria
 - Usar HTTPS
 - Implementar rate limiting
-- Adicionar logs de auditoria
+- Integrar o sistema de auditoria com o usuário autenticado (atualmente usa "admin" fixo)
+- Considerar implementar filtros e paginação no endpoint de auditoria para grandes volumes de dados
 
 ---
 
@@ -387,17 +497,8 @@ Este projeto é um projeto de demonstração.
 
 ## 👤 Autor
 
-**Lucas Oliveira**
+**Vitor Freitas**
 
-- 📧 Email: lucasptrick7@gmail.com
-- 💼 LinkedIn: [lucasptrck](https://www.linkedin.com/in/lucasptrck/)
-
+- 📧 Email: developer.vitord@gmail.com
+- 💼 LinkedIn: [Vitor Dias](https://www.linkedin.com/in/vitor-dias-5450b5194/)
 ---
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
-
----
-
-**Desenvolvido com ❤️ usando Spring Boot**

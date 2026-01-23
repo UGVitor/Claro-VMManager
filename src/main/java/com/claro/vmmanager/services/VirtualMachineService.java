@@ -12,11 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class VirtualMachineService {
+
+    @Autowired
+    private VmTaskExecutionService taskExecutionService;
 
     @Autowired
     private VirtualMachineRepository vmRepository;
@@ -32,7 +36,11 @@ public class VirtualMachineService {
             vm.setDisk(dto.disk());
 
             VirtualMachine savedVm = vmRepository.save(vm);
-
+        taskExecutionService.log(
+                "admin",
+                vm.getName(),
+                "CREATE VM"
+        );
             return new VirtualMachineResponseDTO(
                     savedVm.getId(),
                     savedVm.getName(),
@@ -50,6 +58,10 @@ public class VirtualMachineService {
        Optional<VirtualMachine> vm = vmRepository.findById(id);
        if (vm.isPresent()) {
            vmRepository.delete(vm.get());
+           taskExecutionService.log(
+                   "admin",
+                   vm.get().getName(),
+                   "DELETE VM");
        } else {
            throw new EntityNotFoundException("Machine with id " + id + " was not found");
        }
@@ -67,7 +79,10 @@ public class VirtualMachineService {
         if (updateDTO.disk() != null) vm.setDisk(updateDTO.disk());
 
         VirtualMachine savedVm = vmRepository.save(vm);
-
+        taskExecutionService.log(
+                "admin",
+                vm.getName(),
+                "UPDATE VM");
         return new VirtualMachineResponseDTO(
                 savedVm.getId(),
                 savedVm.getName(),
@@ -88,8 +103,11 @@ public class VirtualMachineService {
                 .orElseThrow(() ->
                         new EntityNotFoundException("Machine with id " + id + " was not found")
                 );
-
         vm.setStatus(status);
+        taskExecutionService.log(
+                "admin",
+                vm.getName(),
+                "UPDATE STATUS VM to "+ status.name());
     }
 
     @Transactional

@@ -1,1 +1,403 @@
 # Claro-VMManager
+
+API REST para gerenciamento de máquinas virtuais, construída com **Spring Boot**, incluindo sistema de autenticação JWT e documentação completa via **Swagger**.
+
+---
+
+## 📋 Índice
+
+- [Tecnologias](#tecnologias)
+- [Funcionalidades](#funcionalidades)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Configuração](#configuração)
+- [Como Executar](#como-executar)
+- [Endpoints](#endpoints)
+- [Autenticação](#autenticação)
+- [Documentação API](#documentação-api)
+
+---
+
+## 🛠 Tecnologias
+
+- **Java 17**
+- **Spring Boot 4.0.1**
+- **Spring Data JPA**
+- **Spring Security**
+- **PostgreSQL**
+- **JWT (Auth0)**
+- **Swagger / OpenAPI (springdoc-openapi)**
+- **Maven**
+- **Lombok**
+- **Bean Validation**
+
+---
+
+## ✨ Funcionalidades
+
+### Autenticação e Autorização
+- ✅ Registro de usuários
+- ✅ Login com JWT
+- ✅ Autenticação baseada em token
+- ✅ Criptografia de senhas com BCrypt
+
+### Gerenciamento de Máquinas Virtuais
+- ✅ **CRUD completo** de máquinas virtuais
+- ✅ Validações de entrada:
+    - Nome não nulo, mínimo 5 caracteres
+    - CPU, RAM, memória e disco positivos
+- ✅ Controle de status (`RUNNING`, `STOPPED`, `SUSPENDED`)
+- ✅ Atualização parcial de recursos
+- ✅ Data de criação automática
+
+---
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+ └─ main/
+     ├─ java/com/claro/vmmanager/
+     │   ├─ controllers/          # Endpoints REST
+     │   │   ├─ AuthController.java
+     │   │   └─ VirtualMachineController.java
+     │   ├─ services/             # Lógica de negócio
+     │   │   └─ VirtualMachineService.java
+     │   ├─ models/               # Entidades JPA
+     │   │   ├─ User.java
+     │   │   ├─ VirtualMachine.java
+     │   │   └─ enums/
+     │   │       └─ Status.java
+     │   ├─ repositories/         # Repositórios JPA
+     │   │   ├─ UserRepository.java
+     │   │   └─ VirtualMachineRepository.java
+     │   ├─ dto/                  # Data Transfer Objects
+     │   │   ├─ LoginRequestDTO.java
+     │   │   ├─ RegisterRequestDTO.java
+     │   │   ├─ UserResponseDTO.java
+     │   │   ├─ VirtualMachineRequestDTO.java
+     │   │   ├─ VirtualMachineResponseDTO.java
+     │   │   ├─ VirtualMachineUpdateDTO.java
+     │   │   └─ VirtualMachineUpdateStatusDTO.java
+     │   └─ infra/                # Configurações de infraestrutura
+     │       ├─ security/         # Configurações de segurança
+     │       │   ├─ SecurityConfig.java
+     │       │   ├─ SecurityFilter.java
+     │       │   ├─ TokenService.java
+     │       │   └─ CustomUserDetailsService.java
+     │       ├─ cors/             # Configuração CORS
+     │       │   └─ CorsConfig.java
+     │       └─ swagger/          # Configuração Swagger
+     │           ├─ SwaggerConfiguration.java
+     │           └─ SwaggerWebMvcConfig.java
+     └─ resources/
+         └─ application.properties
+```
+
+---
+
+## ⚙️ Configuração
+
+### Propriedades da Aplicação
+
+O arquivo `application.properties` contém as configurações principais:
+
+```properties
+spring.application.name=vmmanager
+
+# PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/VMManagerDB
+spring.datasource.username=postgres
+spring.datasource.password=sua_senha
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# JWT Secret Key
+api.security.token.secret=chavesupersecreta
+```
+
+### Configuração do Banco de Dados
+
+1. **Instale o PostgreSQL** (se ainda não tiver)
+2. **Crie o banco de dados:**
+   ```sql
+   CREATE DATABASE VMManagerDB;
+   ```
+3. **Atualize as credenciais** no arquivo `application.properties`:
+   - `spring.datasource.username`
+   - `spring.datasource.password`
+   - `spring.datasource.url` (se necessário)
+
+### Configuração de Segurança
+
+⚠️ **Importante:** Altere o valor de `api.security.token.secret` no `application.properties` para uma chave secreta forte em produção.
+
+---
+
+## 🚀 Como Executar
+
+### Pré-requisitos
+
+- Java 17 ou superior
+- Maven 3.6+
+- PostgreSQL instalado e rodando
+- Banco de dados `VMManagerDB` criado
+
+### Passos
+
+1. **Clone o repositório:**
+   ```bash
+   git clone <url-do-repositorio>
+   cd Claro-VMManager
+   ```
+
+2. **Configure o banco de dados:**
+   - Edite `src/main/resources/application.properties`
+   - Ajuste as credenciais do PostgreSQL
+
+3. **Execute a aplicação:**
+
+   **Opção 1 - Via IDE:**
+   - Abra o projeto em sua IDE
+   - Execute a classe `VmmanagerApplication`
+   - Ou use o atalho: `Ctrl + F5`
+
+   **Opção 2 - Via Maven:**
+   ```bash
+   mvn spring-boot:run
+   ```
+   
+   **Windows (PowerShell):**
+   ```powershell
+   .\mvnw spring-boot:run
+   ```
+
+4. **Acesse a aplicação:**
+   - API: `http://localhost:8080`
+   - Swagger UI: `http://localhost:8080/swagger-ui/index.html`
+
+---
+
+## 🔌 Endpoints
+
+### Autenticação
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| `POST` | `/auth/v1/register` | Registra um novo usuário | Não requerida |
+| `POST` | `/auth/v1/login` | Autentica e retorna JWT | Não requerida |
+
+### Máquinas Virtuais
+
+| Método | Endpoint | Descrição | Autenticação |
+|--------|----------|-----------|--------------|
+| `GET` | `/vm/v1` | Lista todas as VMs | Não requerida* |
+| `GET` | `/vm/v1/{id}` | Busca VM por ID | Não requerida* |
+| `POST` | `/vm/v1` | Cria uma nova VM | Não requerida* |
+| `PATCH` | `/vm/v1/{id}` | Atualiza dados da VM | Não requerida* |
+| `PATCH` | `/vm/v1/status/{id}` | Atualiza status da VM | Não requerida* |
+| `DELETE` | `/vm/v1/{id}` | Remove uma VM | Não requerida* |
+
+*Atualmente configurado como público. Recomenda-se adicionar autenticação em produção.
+
+---
+
+## 🔐 Autenticação
+
+### Registro de Usuário
+
+**Request:**
+```json
+POST /auth/v1/register
+Content-Type: application/json
+
+{
+  "name": "João Silva",
+  "email": "joao@example.com",
+  "password": "senha123"
+}
+```
+
+**Response:**
+```json
+{
+  "name": "João Silva",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Login
+
+**Request:**
+```json
+POST /auth/v1/login
+Content-Type: application/json
+
+{
+  "email": "joao@example.com",
+  "password": "senha123"
+}
+```
+
+**Response:**
+```json
+{
+  "name": "João Silva",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+### Uso do Token
+
+Para requisições autenticadas, inclua o token no header:
+```
+Authorization: Bearer <seu_token_jwt>
+```
+
+---
+
+## 📚 Documentação API
+
+A documentação completa da API está disponível via **Swagger UI** após iniciar a aplicação:
+
+🔗 **[Swagger UI](http://localhost:8080/swagger-ui/index.html)**
+
+O Swagger fornece:
+- Lista completa de endpoints
+- Modelos de requisição e resposta
+- Possibilidade de testar endpoints diretamente
+- Esquemas de validação
+
+---
+
+## 📝 Exemplos de Uso
+
+### Criar uma Máquina Virtual
+
+```json
+POST /vm/v1
+Content-Type: application/json
+
+{
+  "name": "VM-Producao-01",
+  "cpu": 4,
+  "ram": 8.0,
+  "memory": 16.0,
+  "disk": 100.0
+}
+```
+
+### Atualizar Status
+
+```json
+PATCH /vm/v1/status/1
+Content-Type: application/json
+
+{
+  "status": "STOPPED"
+}
+```
+
+### Atualizar Recursos
+
+```json
+PATCH /vm/v1/1
+Content-Type: application/json
+
+{
+  "name": "VM-Producao-01-Updated",
+  "cpu": 8,
+  "ram": 16.0
+}
+```
+
+---
+
+## 🗄️ Modelo de Dados
+
+### VirtualMachine
+
+| Campo | Tipo | Descrição | Validações |
+|-------|------|-----------|------------|
+| `id` | Long | ID único (gerado automaticamente) | - |
+| `name` | String | Nome da VM | Não nulo, mínimo 5 caracteres |
+| `cpu` | Integer | Número de CPUs | Não nulo, positivo |
+| `ram` | BigDecimal | RAM em GB | Não nulo, positivo |
+| `memory` | BigDecimal | Memória em GB | Não nulo, positivo |
+| `disk` | BigDecimal | Disco em GB | Não nulo, positivo |
+| `status` | Status | Status da VM | RUNNING, STOPPED, SUSPENDED |
+| `dataCriacao` | LocalDateTime | Data de criação | Gerado automaticamente |
+
+### User
+
+| Campo | Tipo | Descrição | Validações |
+|-------|------|-----------|------------|
+| `id` | String (UUID) | ID único | Gerado automaticamente |
+| `name` | String | Nome do usuário | Não nulo, não vazio |
+| `email` | String | Email do usuário | Não nulo, formato válido |
+| `password` | String | Senha (criptografada) | Não nulo, não vazio |
+
+### Status (Enum)
+
+- `RUNNING` - Máquina em execução
+- `STOPPED` - Máquina parada
+- `SUSPENDED` - Máquina suspensa
+
+---
+
+## 🔒 Segurança
+
+- ✅ Senhas criptografadas com BCrypt
+- ✅ Autenticação JWT (stateless)
+- ✅ Validação de dados de entrada
+- ✅ CORS configurado
+- ✅ Spring Security implementado
+
+**⚠️ Recomendações para Produção:**
+- Alterar a chave secreta JWT (`api.security.token.secret`)
+- Habilitar autenticação obrigatória para endpoints de VM
+- Usar HTTPS
+- Implementar rate limiting
+- Adicionar logs de auditoria
+
+---
+
+## 📖 Referências
+
+### Documentação Oficial
+
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/4.0.1/reference/htmlsingle/)
+- [Spring Security Reference](https://docs.spring.io/spring-security/reference/index.html)
+- [Spring Data JPA](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+- [Swagger/OpenAPI](https://swagger.io/docs/)
+
+### Guias
+
+- [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
+- [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+- [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
+- [Securing a Web Application](https://spring.io/guides/gs/securing-web/)
+
+---
+
+## 📄 Licença
+
+Este projeto é um projeto de demonstração.
+
+---
+
+## 👤 Autor
+
+**Lucas Oliveira**
+
+- 📧 Email: lucasptrick7@gmail.com
+- 💼 LinkedIn: [lucasptrck](https://www.linkedin.com/in/lucasptrck/)
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
+
+---
+
+**Desenvolvido com ❤️ usando Spring Boot**
